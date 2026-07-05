@@ -1,0 +1,20 @@
+# systemd service — server background e cholbe, reboot er por o auto-start।
+# 1. ei file e <USER> ar <PATH> thik koro (niche dekho)
+# 2. sudo cp deploy/reels-maker.service /etc/systemd/system/
+# 3. sudo systemctl daemon-reload && sudo systemctl enable --now reels-maker
+# 4. status: sudo systemctl status reels-maker   |   log: journalctl -u reels-maker -f
+
+[Unit]
+Description=Reels Maker Web UI
+After=network.target
+
+[Service]
+Type=simple
+User=<USER>
+WorkingDirectory=<PATH>/Reels Maker
+ExecStart=/usr/bin/env bash <PATH>/Reels Maker/deploy/run.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

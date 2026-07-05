@@ -1,0 +1,7 @@
+# VPS / Linux server deps (headless — no GUI libs, API LLM backend).
+faster-whisper==1.0.3
+PyYAML==6.0.2
+requests>=2.31.0
+opencv-python-headless>=4.8.0
+Flask>=3.0.0
+gunicorn>=21.0.0

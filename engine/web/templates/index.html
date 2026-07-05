@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reels Maker</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --accent:#6c5ce7; --accent2:#a29bfe; --txt:#e8e8ee; --mut:#9aa0ac; --ok:#00d68f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:28px 20px 10px; text-align:center; }
+  header h1 { margin:0; font-size:28px; }
+  header p { color:var(--mut); margin:6px 0 0; font-size:14px; }
+  .wrap { max-width:920px; margin:0 auto; padding:20px; }
+  .card { background:var(--card); border-radius:16px; padding:22px; margin-bottom:20px; border:1px solid #262a33; }
+  #drop { border:2px dashed #3a3f4b; border-radius:14px; padding:42px 20px; text-align:center; cursor:pointer; transition:.2s; }
+  #drop.hover { border-color:var(--accent); background:#1f2230; }
+  #drop .big { font-size:40px; }
+  #drop .name { color:var(--accent2); margin-top:10px; font-weight:600; word-break:break-all; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-top:16px; }
+  label { font-size:12px; color:var(--mut); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+  select,input { width:100%; padding:9px 11px; background:#11141a; border:1px solid #2c313c; border-radius:9px; color:var(--txt); font-size:14px; }
+  .row { display:flex; gap:18px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  .toggle { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--txt); }
+  button.go { margin-top:20px; width:100%; padding:14px; font-size:16px; font-weight:700; border:0; border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; cursor:pointer; }
+  button.go:disabled { opacity:.5; cursor:not-allowed; }
+  .barwrap { height:12px; background:#11141a; border-radius:8px; overflow:hidden; margin:14px 0; }
+  .bar { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--ok)); transition:width .4s; }
+  #log { font-family:ui-monospace,Consolas,monospace; font-size:12px; color:var(--mut); background:#0c0e12;
+    border-radius:10px; padding:12px; max-height:200px; overflow:auto; white-space:pre-wrap; }
+  .clip { background:#11141a; border-radius:12px; overflow:hidden; border:1px solid #262a33; }
+  .clip video { width:100%; display:block; background:#000; }
+  .clip .meta { padding:10px 12px; }
+  .clip .title { font-weight:600; font-size:14px; }
+  .clip .sub { color:var(--mut); font-size:12px; margin-top:4px; display:flex; justify-content:space-between; }
+  .clip a { color:var(--accent2); text-decoration:none; font-size:13px; }
+  .badge { background:var(--accent); color:#fff; border-radius:6px; padding:1px 7px; font-size:11px; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 Reels Maker</h1>
+  <p>Long video → AI Shorts. Local · offline-capable · auto caption + speaker tracking</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <div id="drop">
+      <div class="big">📁</div>
+      <div>Video drag-drop koro, ba click kore beche nao</div>
+      <div class="name" id="fname"></div>
+      <input type="file" id="file" accept="video/*" class="hidden">
+    </div>
+
+    <div class="grid">
+      <div>
+        <label>Caption Style</label>
+        <select id="preset">
+          <option value="hormozi">Hormozi (bold pop)</option>
+          <option value="impact">Impact (red pop)</option>
+          <option value="neon">Neon (cyan)</option>
+          <option value="tiktok">TikTok (green)</option>
+          <option value="clean">Clean</option>
+          <option value="classic">Classic</option>
+        </select>
+      </div>
+      <div>
+        <label>Language</label>
+        <select id="lang">
+          <option value="auto">Auto-detect</option>
+          <option value="en">English</option>
+          <option value="bn">Bangla</option>
+        </select>
+      </div>
+      <div>
+        <label>Min clip (s)</label>
+        <input type="number" id="min_dur" value="20" min="5" max="120">
+      </div>
+      <div>
+        <label>Max clip (s)</label>
+        <input type="number" id="max_dur" value="60" min="10" max="180">
+      </div>
+    </div>
+
+    <div class="row">
+      <label class="toggle"><input type="checkbox" id="caption" checked> Captions</label>
+      <label class="toggle"><input type="checkbox" id="ai" checked> AI smart selection</label>
+      <label class="toggle"><input type="checkbox" id="track" checked> Speaker tracking (9:16)</label>
+      <label class="toggle"><input type="checkbox" id="zoom" checked> Dynamic zoom + transitions</label>
+    </div>
+
+    <button class="go" id="go" disabled>✨ Generate Shorts</button>
+  </div>
+
+  <div class="card hidden" id="progcard">
+    <div class="barwrap"><div class="bar" id="bar"></div></div>
+    <div id="log"></div>
+  </div>
+
+  <div class="card hidden" id="resultcard">
+    <h3 style="margin-top:0">✅ Ready Shorts</h3>
+    <div class="grid" id="clips"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let chosenFile = null, poll = null;
+
+const drop = $('drop'), fileInput = $('file');
+drop.onclick = () => fileInput.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('hover'); };
+drop.ondragleave = () => drop.classList.remove('hover');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('hover'); setFile(e.dataTransfer.files[0]); };
+fileInput.onchange = () => setFile(fileInput.files[0]);
+
+function setFile(f) {
+  if (!f) return;
+  chosenFile = f;
+  $('fname').textContent = f.name + '  (' + (f.size/1048576).toFixed(1) + ' MB)';
+  $('go').disabled = false;
+}
+
+$('go').onclick = async () => {
+  if (!chosenFile) return;
+  $('go').disabled = true;
+  $('progcard').classList.remove('hidden');
+  $('resultcard').classList.add('hidden');
+  $('clips').innerHTML = ''; $('log').textContent = ''; $('bar').style.width = '0%';
+
+  const fd = new FormData();
+  fd.append('video', chosenFile);
+  fd.append('preset', $('preset').value);
+  fd.append('lang', $('lang').value);
+  fd.append('min_dur', $('min_dur').value);
+  fd.append('max_dur', $('max_dur').value);
+  fd.append('caption', $('caption').checked ? 'true' : 'false');
+  fd.append('ai', $('ai').checked ? 'true' : 'false');
+  fd.append('track', $('track').checked ? 'true' : 'false');
+  fd.append('zoom', $('zoom').checked ? 'true' : 'false');
+
+  const res = await fetch('/api/generate', { method:'POST', body:fd });
+  const data = await res.json();
+  if (data.error) { alert(data.error); $('go').disabled = false; return; }
+  pollStatus(data.job_id);
+};
+
+function pollStatus(jobId) {
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    const r = await fetch('/api/status/' + jobId);
+    const j = await r.json();
+    $('bar').style.width = (j.pct || 0) + '%';
+    $('log').textContent = (j.log || []).join('\n');
+    $('log').scrollTop = $('log').scrollHeight;
+    if (j.state === 'done') { clearInterval(poll); showClips(j.clips); $('go').disabled = false; }
+    else if (j.state === 'error') { clearInterval(poll); $('go').disabled = false; }
+  }, 1000);
+}
+
+function showClips(clips) {
+  $('resultcard').classList.remove('hidden');
+  const box = $('clips'); box.innerHTML = '';
+  clips.forEach(c => {
+    const dur = Math.round((c.end - c.start));
+    const el = document.createElement('div');
+    el.className = 'clip';
+    el.innerHTML = `
+      <video src="${c.url}" controls preload="metadata"></video>
+      <div class="meta">
+        <div class="title">${c.title || ('Clip ' + c.index)}</div>
+        <div class="sub">
+          <span>${c.score != null ? '⭐ ' + c.score : ''} · ${dur}s</span>
+          <a href="${c.url}" download>⬇ Download</a>
+        </div>
+      </div>`;
+    box.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>

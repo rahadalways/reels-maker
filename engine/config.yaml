@@ -1,0 +1,52 @@
+# Reels Maker — engine settings
+
+ffmpeg: ffmpeg            # ffmpeg path (PATH e thakle just "ffmpeg")
+
+transcribe:
+  model_size: small      # tiny | base | small | medium  (CPU te small/base bhalo)
+  language: null          # null = auto-detect (Bangla-English mixed er jonno auto bhalo)
+  device: cpu
+  compute_type: int8     # CPU te int8 fast + kom RAM
+
+segment:
+  min_dur: 20            # second — clip er minimum length
+  max_dur: 60            # second — clip er maximum length
+  pause_gap: 0.6         # second — eto boro pause hole natural break (rule-based fallback)
+
+ai:
+  enabled: true          # true = LLM diye smart clip selection
+  backend: api           # api (OpenAI-compatible, fast) | local (llama-cpp, offline)
+  max_clips: 10          # ekbare LLM koto ta clip suggest korbe
+
+  api:
+    base_url: https://opencode.ai/zen/v1   # OpenCode Zen (OpenAI-compatible)
+    model: deepseek-v4-flash-free           # free model; paid (credit): claude-haiku-4-5
+    api_key_env: REELS_LLM_API_KEY          # key engine/.env e ache
+
+  local:
+    model_path: models/qwen2.5-3b-instruct-q4_k_m.gguf   # GGUF (offline mode)
+    n_ctx: 8192
+    n_threads: null
+
+caption:
+  enabled: true          # false = caption chara (sudhu crop/zoom)
+  preset: hormozi        # hormozi | impact | neon | tiktok | clean | classic
+  # niche null na korle preset er value override hoy:
+  group_size: null       # ekbare koto word screen e dekhabe
+  font: null             # font name
+  font_size: null
+  uppercase: null        # true/false
+  text_color: null       # normal word color (ASS &HBBGGRR)
+  highlight_color: null  # active word color
+  position: null         # bottom | center | top
+  margin_v: null         # bottom/top theke distance (px)
+
+output:
+  vertical: true         # 9:16 vertical Shorts banabe
+  track_face: true       # true = speaker er mukh follow kore crop; false = center-crop
+  sample_fps: 3          # face detection er jonno proti second e koto frame check
+  zoom: 0.06             # proti sentence e zoom alternate (jump-cut energy). 0 = off, 0.06 = 6%
+  fade: 0.25             # clip shuru/ses e fade in/out (second). 0 = off
+  width: 1080
+  height: 1920
+  dir: output

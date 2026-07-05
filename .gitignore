@@ -1,0 +1,9 @@
+.venv/
+output/
+engine/models/
+__pycache__/
+*.pyc
+.env
+engine/.env
+sample_long.mp4
+reels-maker-deploy.zip

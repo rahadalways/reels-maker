@@ -1,0 +1,11 @@
+# Core (sob phase e lagbe)
+faster-whisper==1.0.3
+PyYAML==6.0.2
+requests>=2.31.0
+opencv-python>=4.8.0     # Phase 3: face detection / speaker tracking
+Flask>=3.0.0             # Phase 5: local web UI
+
+# Local LLM backend (offline mode) — optional.
+# CPU wheel install:
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+llama-cpp-python>=0.3.0

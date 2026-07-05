@@ -1,0 +1,11 @@
+.venv/
+output/
+engine/models/
+**/__pycache__/
+*.pyc
+.git/
+.env
+engine/.env
+sample_long.mp4
+reels-maker-deploy.zip
+*.md
