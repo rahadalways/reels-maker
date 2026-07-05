@@ -3,10 +3,12 @@
 ffmpeg: ffmpeg            # ffmpeg path (PATH e thakle just "ffmpeg")
 
 transcribe:
-  model_size: small      # tiny | base | small | medium  (CPU te small/base bhalo)
+  model_size: base       # tiny | base | small | medium  (base = fast; small = accurate)
   language: null          # null = auto-detect (Bangla-English mixed er jonno auto bhalo)
   device: cpu
   compute_type: int8     # CPU te int8 fast + kom RAM
+  beam_size: 1           # 1 = fast (greedy), 5 = beshi accurate kintu slow
+  cpu_threads: 0         # 0 = auto (sob core use); 4-core VM e 4 dile o hoy
 
 segment:
   min_dur: 20            # second — clip er minimum length

@@ -43,6 +43,8 @@ def run_pipeline(video, cfg, work_dir, progress=None):
         language=tc.get("language"),
         device=tc.get("device", "cpu"),
         compute_type=tc.get("compute_type", "int8"),
+        beam_size=tc.get("beam_size", 1),
+        cpu_threads=tc.get("cpu_threads", 0),
     )
     (work_dir / "transcript.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
