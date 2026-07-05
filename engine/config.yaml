@@ -32,6 +32,7 @@ ai:
 
 caption:
   enabled: true          # false = caption chara (sudhu crop/zoom)
+  romanize: true         # Bangla->Banglish, Hindi->Hindilish (Latin script; font issue solve)
   preset: hormozi        # hormozi | impact | neon | tiktok | clean | classic
   # niche null na korle preset er value override hoy:
   group_size: null       # ekbare koto word screen e dekhabe

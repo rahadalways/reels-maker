@@ -2,6 +2,8 @@
 faster-whisper==1.0.3
 PyYAML==6.0.2
 requests>=2.31.0
-opencv-python-headless>=4.8.0
+opencv-python-headless==4.10.0.84   # pinned: numpy-2 compatible (CascadeClassifier bug fix)
+numpy<2.3
+Unidecode>=1.3.8                     # Bangla/Hindi -> Latin caption (romanize)
 Flask>=3.0.0
 gunicorn>=21.0.0

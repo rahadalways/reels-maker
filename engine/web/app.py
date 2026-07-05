@@ -62,6 +62,7 @@ def _apply_form(cfg, form):
     if form.get("preset"):
         cfg["caption"]["preset"] = form["preset"]
     cfg["caption"]["enabled"] = form.get("caption", "true") == "true"
+    cfg["caption"]["romanize"] = form.get("romanize", "true") == "true"
     lang = form.get("lang")
     cfg["transcribe"]["language"] = None if lang in (None, "", "auto") else lang
     if form.get("min_dur"):

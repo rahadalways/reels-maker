@@ -10,6 +10,11 @@ Fix gula:
 """
 from pathlib import Path
 
+try:
+    from unidecode import unidecode  # Bangla/Hindi/etc script -> Latin (Banglish/Hindilish)
+except ImportError:
+    unidecode = None
+
 # ---- Style presets (ASS color = &HBBGGRR, alpha &HAABBGGRR) ----
 # margin_v = niche theke distance (px). 9:16 height 1920. ~520-600 = lower-third.
 PRESETS = {
@@ -135,6 +140,11 @@ def words_to_ass(words, ass_path, clip_start, clip_end, cfg, width=1080, height=
 
     ws = sorted([w for w in words if w["end"] > clip_start and w["start"] < clip_end],
                 key=lambda w: w["start"])
+
+    # romanize: Bangla voice -> Banglish, Hindi -> Hindilish, etc. (font problem edate + style)
+    # English already Latin — no change. Per-word kori jate timestamp thik thake.
+    if cfg.get("romanize", True) and unidecode is not None:
+        ws = [{**w, "text": unidecode(w["text"]) or w["text"]} for w in ws]
     starts, ends = _clean_timings(ws, clip_start, clip_end)
 
     lines = []
