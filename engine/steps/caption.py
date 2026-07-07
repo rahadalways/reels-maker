@@ -16,49 +16,50 @@ except ImportError:
     unidecode = None
 
 # ---- Style presets (ASS color = &HBBGGRR, alpha &HAABBGGRR) ----
-# margin_v = niche theke distance (px). 9:16 height 1920. ~520-600 = lower-third.
+# margin_v = niche theke distance (px). 9:16 height 1920. ~320-400 = thik nicher zone
+# (bottom 17-21% — majhe bhase na, abar platform UI overlay-r upore thake).
 PRESETS = {
     "hormozi": {
         "font": "Arial Black", "font_size": 86, "bold": True,
         "text_color": "&H00FFFFFF", "highlight_color": "&H0000F0FF",
         "outline_color": "&H00000000", "outline": 6, "shadow": 2,
         "uppercase": True, "mode": "word", "pop": 100, "group_size": 3,
-        "position": "bottom", "margin_v": 560,
+        "position": "bottom", "margin_v": 380,
     },
     "impact": {
         "font": "Impact", "font_size": 92, "bold": False,
         "text_color": "&H00FFFFFF", "highlight_color": "&H003C14DC",
         "outline_color": "&H00000000", "outline": 6, "shadow": 2,
         "uppercase": True, "mode": "word", "pop": 100, "group_size": 3,
-        "position": "bottom", "margin_v": 560,
+        "position": "bottom", "margin_v": 380,
     },
     "neon": {
         "font": "Verdana", "font_size": 78, "bold": True,
         "text_color": "&H00FFFFFF", "highlight_color": "&H00FFFF00",
         "outline_color": "&H00501E00", "outline": 5, "shadow": 1,
         "uppercase": True, "mode": "word", "pop": 100, "group_size": 3,
-        "position": "bottom", "margin_v": 600,
+        "position": "bottom", "margin_v": 400,
     },
     "tiktok": {
         "font": "Arial", "font_size": 74, "bold": True,
         "text_color": "&H00FFFFFF", "highlight_color": "&H0000E000",
         "outline_color": "&H00000000", "outline": 4, "shadow": 1,
         "uppercase": False, "mode": "word", "pop": 100, "group_size": 4,
-        "position": "bottom", "margin_v": 520,
+        "position": "bottom", "margin_v": 360,
     },
     "clean": {
         "font": "Arial", "font_size": 66, "bold": True,
         "text_color": "&H00FFFFFF", "highlight_color": "&H0000FFFF",
         "outline_color": "&H00000000", "outline": 3, "shadow": 1,
         "uppercase": False, "mode": "fill", "pop": 100, "group_size": 4,
-        "position": "bottom", "margin_v": 480,
+        "position": "bottom", "margin_v": 340,
     },
     "classic": {
         "font": "Arial", "font_size": 64, "bold": True,
         "text_color": "&H00FFFFFF", "highlight_color": "&H0000FFFF",
         "outline_color": "&H00000000", "outline": 3, "shadow": 1,
         "uppercase": False, "mode": "fill", "pop": 100, "group_size": 4,
-        "position": "bottom", "margin_v": 420,
+        "position": "bottom", "margin_v": 320,
     },
 }
 
@@ -167,15 +168,18 @@ def _fill_line(ws, gi, starts, ends, upper):
         cs = max(int(round((ends[j] - prev) * 100)), 1)
         parts.append(f"{{\\k{cs}}}{_txt(ws[j]['text'], upper)} ")
         prev = ends[j]
-    return f"Dialogue: 0,{_fmt_time(g_start)},{_fmt_time(g_end)},Default,,0,0,0,,{''.join(parts).strip()}"
+    # \fad = group ta sundor kore fade-in/out hoy (hut kore ashe na)
+    return (f"Dialogue: 0,{_fmt_time(g_start)},{_fmt_time(g_end)},Default,,0,0,0,,"
+            f"{{\\fad(120,80)}}{''.join(parts).strip()}")
 
 
 def _word_lines(ws, gi, starts, ends, st, upper):
-    """Group er protita word — alada event, active word color highlight. Layout sthir."""
+    """Group er protita word — alada event, active word color highlight. Layout sthir.
+    Group er prothom event e fade-in (\\fad) — notun line sundor kore ashe, flicker nai."""
     hl, pop = st["highlight_color"], st["pop"]
     scale = pop and pop != 100
     out = []
-    for j in gi:
+    for n, j in enumerate(gi):
         parts = []
         for k in gi:
             t = _txt(ws[k]["text"], upper)
@@ -184,6 +188,7 @@ def _word_lines(ws, gi, starts, ends, st, upper):
                 parts.append(f"{{{tag}}}{t}{{\\r}} ")
             else:
                 parts.append(f"{t} ")
+        fad = "{\\fad(110,0)}" if n == 0 else ""
         out.append(
-            f"Dialogue: 0,{_fmt_time(starts[j])},{_fmt_time(ends[j])},Default,,0,0,0,,{''.join(parts).strip()}")
+            f"Dialogue: 0,{_fmt_time(starts[j])},{_fmt_time(ends[j])},Default,,0,0,0,,{fad}{''.join(parts).strip()}")
     return out

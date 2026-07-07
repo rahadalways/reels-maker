@@ -78,6 +78,14 @@ def run_pipeline(video, cfg, work_dir, progress=None):
     if not clips:
         raise RuntimeError("Kono clip banano gelo na (transcript khali?).")
 
+    # user koyta shorts chay — top-N rakho (AI hole score-sorted, tai best gula thake)
+    cap = int(ai.get("max_clips") or 0)
+    if cap and len(clips) > cap:
+        clips = clips[:cap]
+        for i, c in enumerate(clips, 1):
+            c["index"] = i
+        say(f"   (tomar chawa moto top {cap} ta rakha holo)")
+
     # 4 + 5 + 6. caption + track + render
     oc = cfg["output"]
     made = []

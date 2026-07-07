@@ -127,6 +127,15 @@
       <input type="file" id="file" accept="video/*" class="hidden">
     </div>
 
+    <div style="display:flex;align-items:center;gap:12px;margin:16px 0 4px">
+      <div style="flex:1;height:1px;background:var(--stroke)"></div>
+      <span style="color:var(--mut);font-size:12px">ba YouTube link</span>
+      <div style="flex:1;height:1px;background:var(--stroke)"></div>
+    </div>
+    <input type="url" id="yt_url" placeholder="https://www.youtube.com/watch?v=..."
+      style="width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--stroke);
+      border-radius:11px;color:var(--txt);font-size:14px;outline:none">
+
     <div class="grid">
       <div><label class="lbl">Caption Style</label><div class="sel"><select id="preset">
         <option value="hormozi">Hormozi — bold pop</option>
@@ -144,6 +153,14 @@
       </select></div></div>
       <div><label class="lbl">Min clip (sec)</label><input type="number" id="min_dur" value="20" min="5" max="120"></div>
       <div><label class="lbl">Max clip (sec)</label><input type="number" id="max_dur" value="60" min="10" max="180"></div>
+      <div><label class="lbl">Koyta Shorts</label><div class="sel"><select id="max_clips">
+        <option value="0">Auto (best gula)</option>
+        <option value="1">1 ta</option>
+        <option value="2">2 ta</option>
+        <option value="3">3 ta</option>
+        <option value="5">5 ta</option>
+        <option value="8">8 ta</option>
+      </select></div></div>
     </div>
 
     <div class="toggles">
@@ -170,36 +187,58 @@
     <div class="rgrid" id="clips"></div>
   </div>
 
+  <div class="card hidden" id="editcard">
+    <h3>✏️ Caption Edit — <span id="editclipname"></span></h3>
+    <p style="color:var(--mut);font-size:13px;margin:0 0 12px">
+      Bhul word thakle thik koro. Word khali kore dile seta caption theke baad jabe.
+      Timing auto thik thake.</p>
+    <div id="editwords" style="display:flex;flex-wrap:wrap;gap:6px;max-height:300px;overflow:auto;
+      background:var(--bg2);border:1px solid var(--stroke);border-radius:12px;padding:14px"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="go" id="savecap" style="margin-top:0">💾 Save & Re-render</button>
+      <button class="go" id="canceledit" style="margin-top:0;background:var(--bg2);
+        box-shadow:none;border:1px solid var(--stroke)">Cancel</button>
+    </div>
+    <div id="editmsg" style="color:var(--mut);font-size:13px;margin-top:10px"></div>
+  </div>
+
   <div class="foot">Reels Maker · self-hosted · powered by Whisper + FFmpeg</div>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-let chosenFile=null, poll=null;
+let chosenFile=null, poll=null, curJob=null, editCtx=null;
 const drop=$('drop'), fileInput=$('file');
 drop.onclick=()=>fileInput.click();
 drop.ondragover=e=>{e.preventDefault();drop.classList.add('hover')};
 drop.ondragleave=()=>drop.classList.remove('hover');
 drop.ondrop=e=>{e.preventDefault();drop.classList.remove('hover');setFile(e.dataTransfer.files[0])};
 fileInput.onchange=()=>setFile(fileInput.files[0]);
-function setFile(f){ if(!f)return; chosenFile=f;
+function setFile(f){ if(!f)return; chosenFile=f; $('yt_url').value='';
   $('fname').textContent='✓ '+f.name+'  ('+(f.size/1048576).toFixed(1)+' MB)'; $('go').disabled=false; }
+$('yt_url').addEventListener('input',()=>{
+  if($('yt_url').value.trim()){ chosenFile=null; $('fname').textContent=''; $('go').disabled=false; }
+  else if(!chosenFile){ $('go').disabled=true; }
+});
 
 $('go').onclick=async()=>{
-  if(!chosenFile)return;
+  const yt=$('yt_url').value.trim();
+  if(!chosenFile && !yt)return;
   $('go').disabled=true;
   $('progcard').classList.remove('hidden'); $('resultcard').classList.add('hidden');
+  $('editcard').classList.add('hidden');
   $('clips').innerHTML=''; $('log').textContent=''; $('bar').style.width='0%';
   $('errbox').classList.add('hidden'); $('progtitle').textContent='⏳ Processing…';
   $('progcard').scrollIntoView({behavior:'smooth'});
   const fd=new FormData();
-  fd.append('video',chosenFile);
-  ['preset','lang','min_dur','max_dur'].forEach(k=>fd.append(k,$(k).value));
+  if(chosenFile) fd.append('video',chosenFile); else fd.append('yt_url',yt);
+  ['preset','lang','min_dur','max_dur','max_clips'].forEach(k=>fd.append(k,$(k).value));
   ['caption','romanize','ai','track','zoom'].forEach(k=>fd.append(k,$(k).checked?'true':'false'));
   let data;
   try{ const r=await fetch('/api/generate',{method:'POST',body:fd}); data=await r.json(); }
   catch(e){ alert('Upload fail: '+e); $('go').disabled=false; return; }
   if(data.error){ alert(data.error); $('go').disabled=false; return; }
+  curJob=data.job_id;
   pollStatus(data.job_id);
 };
 
@@ -224,14 +263,61 @@ function showClips(clips){
   (clips||[]).forEach(c=>{
     const dur=Math.round(c.end-c.start);
     const el=document.createElement('div'); el.className='clip';
-    el.innerHTML=`<video src="${c.url}" controls preload="metadata"></video>
+    el.innerHTML=`<video id="vid-${c.index}" src="${c.url}" controls preload="metadata"></video>
       <div class="m"><div class="ti">${c.title||('Clip '+c.index)}</div>
       <div class="row2"><span>${c.score!=null?'<span class="badge">⭐ '+c.score+'</span>':''} · ${dur}s</span>
-      <a class="dl" href="${c.url}" download>⬇ Download</a></div></div>`;
+      <a class="dl" href="${c.url}" download>⬇ Download</a></div>
+      <div class="row2"><a class="dl" href="#" onclick="openEdit(${c.index},'${(c.title||'Clip '+c.index).replace(/'/g,'')}');return false">✏️ Edit captions</a></div></div>`;
     box.appendChild(el);
   });
   $('resultcard').scrollIntoView({behavior:'smooth'});
 }
+
+async function openEdit(idx, name){
+  if(!curJob) return;
+  $('editclipname').textContent=name;
+  $('editmsg').textContent='Captions anchi...';
+  $('editcard').classList.remove('hidden');
+  $('editcard').scrollIntoView({behavior:'smooth'});
+  let d;
+  try{ d=await(await fetch(`/api/captions/${curJob}/${idx}`)).json(); }
+  catch(e){ $('editmsg').textContent='Load fail: '+e; return; }
+  if(d.error){ $('editmsg').textContent=d.error; return; }
+  editCtx={idx, words:d.words};
+  const box=$('editwords'); box.innerHTML='';
+  d.words.forEach((w,i)=>{
+    const inp=document.createElement('input');
+    inp.value=w.text; inp.dataset.i=i;
+    inp.style.cssText='background:#11141a;border:1px solid var(--stroke);border-radius:8px;'+
+      'color:var(--txt);padding:6px 9px;font-size:13.5px;width:'+Math.max(w.text.length+2,4)+'ch';
+    inp.oninput=()=>{ inp.style.width=Math.max(inp.value.length+2,4)+'ch'; };
+    box.appendChild(inp);
+  });
+  $('editmsg').textContent=d.words.length+' ta word — bhul gula thik koro, tarpor Save chapo.';
+}
+
+$('canceledit').onclick=()=>{ $('editcard').classList.add('hidden'); editCtx=null; };
+
+$('savecap').onclick=async()=>{
+  if(!editCtx||!curJob) return;
+  const inputs=[...$('editwords').querySelectorAll('input')];
+  const words=inputs.map((inp,i)=>({...editCtx.words[i], text:inp.value.trim()}))
+                    .filter(w=>w.text);
+  $('savecap').disabled=true;
+  $('editmsg').textContent='⏳ Re-render hocche... (1-2 min lagte pare, page bondho koro na)';
+  let d;
+  try{
+    const r=await fetch(`/api/rerender/${curJob}/${editCtx.idx}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({words})});
+    d=await r.json();
+  }catch(e){ $('editmsg').textContent='Fail: '+e; $('savecap').disabled=false; return; }
+  $('savecap').disabled=false;
+  if(d.error){ $('editmsg').textContent='❌ '+d.error; return; }
+  const v=$('vid-'+editCtx.idx);
+  if(v){ v.src=d.url+'?t='+Date.now(); v.load(); }
+  $('editmsg').textContent='✅ Hoye geche! Upore clip ta abar dekho.';
+};
 </script>
 </body>
 </html>

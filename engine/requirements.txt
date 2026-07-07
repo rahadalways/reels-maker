@@ -4,6 +4,7 @@ PyYAML==6.0.2
 requests>=2.31.0
 opencv-python>=4.8.0     # Phase 3: face detection / speaker tracking
 Unidecode>=1.3.8         # romanize caption (Bangla->Banglish, Hindi->Hindilish)
+yt-dlp>=2025.1.1         # YouTube link input
 Flask>=3.0.0             # Phase 5: local web UI
 
 # Local LLM backend (offline mode) — optional.
