@@ -96,6 +96,15 @@ def _apply_form(cfg, form):
     return cfg
 
 
+def _find_cookies():
+    """YouTube cookies file khojo — bot-check bypass er jonno (server IP block hole lage)."""
+    cands = [os.environ.get("REELS_YT_COOKIES", ""), "/app/cookies.txt", str(ROOT / "cookies.txt")]
+    for c in cands:
+        if c and Path(c).is_file() and Path(c).stat().st_size > 0:
+            return c
+    return None
+
+
 def _download_youtube(url, work_dir, progress):
     """YouTube (ba onno site) theke video namay — yt-dlp diye. Path ferot dey."""
     import yt_dlp
@@ -108,8 +117,22 @@ def _download_youtube(url, work_dir, progress):
         "quiet": True,
         "no_warnings": True,
     }
-    with yt_dlp.YoutubeDL(opts) as ydl:
-        ydl.extract_info(url, download=True)
+    cookies = _find_cookies()
+    if cookies:
+        opts["cookiefile"] = cookies
+        progress("   🍪 cookies.txt use korchi")
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.extract_info(url, download=True)
+    except Exception as e:
+        msg = str(e)
+        if "Sign in to confirm" in msg or "not a bot" in msg:
+            raise RuntimeError(
+                "YouTube ei server ke block korche (bot-check). Fix: nijer browser theke "
+                "youtube.com er cookies export koro ('Get cookies.txt LOCALLY' extension), "
+                "file ta VM er ~/reels-maker/cookies.txt e rakho, tarpor "
+                "'docker compose up -d' abar chalao. Bikolpo: video file ta direct upload koro.")
+        raise
     vids = sorted(work_dir.glob("source.*"), key=lambda p: p.stat().st_size, reverse=True)
     if not vids:
         raise RuntimeError("YouTube download hoyni — link thik ache to?")

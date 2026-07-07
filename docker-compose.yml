@@ -12,6 +12,7 @@ services:
     volumes:
       - ./output:/app/output        # banano clip host e thakuk
       - models:/models              # Whisper model cache (ekbar download)
+      - ./cookies.txt:/app/cookies.txt:ro   # YouTube cookies (bot-check bypass; khali thakleo cholbe)
     restart: unless-stopped
 
 volumes:

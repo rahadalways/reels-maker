@@ -13,6 +13,9 @@ python3 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements-server.txt
 
+# 2.5 cookies placeholder (YouTube bot-check bypass er jonno pore asol ta boshaba)
+touch cookies.txt
+
 # 3. secrets file (na thakle template banai)
 if [ ! -f engine/.env ]; then
   cat > engine/.env <<'EOF'
