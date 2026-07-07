@@ -258,6 +258,8 @@
         <label class="tg">AI clip selection<input type="checkbox" id="ai" checked><span class="sw"></span></label>
         <label class="tg">Speaker tracking<input type="checkbox" id="track" checked><span class="sw"></span></label>
         <label class="tg">Zoom + transitions<input type="checkbox" id="zoom" checked><span class="sw"></span></label>
+        <label class="tg">B-roll cutaways<input type="checkbox" id="broll" checked><span class="sw"></span></label>
+        <label class="tg">Emoji + SFX + bar<input type="checkbox" id="effects" checked><span class="sw"></span></label>
       </div>
       <div style="margin-top:22px">
         <button class="btn btn-primary" id="go" disabled>✦ &nbsp;Generate Shorts</button>
@@ -328,7 +330,7 @@ $('go').onclick=async()=>{
   const fd=new FormData();
   if(chosenFile) fd.append('video',chosenFile); else fd.append('yt_url',yt);
   ['preset','lang','min_dur','max_dur','max_clips'].forEach(k=>fd.append(k,$(k).value));
-  ['caption','romanize','ai','track','zoom'].forEach(k=>fd.append(k,$(k).checked?'true':'false'));
+  ['caption','romanize','ai','track','zoom','broll','effects'].forEach(k=>fd.append(k,$(k).checked?'true':'false'));
   let data;
   try{ const r=await fetch('/api/generate',{method:'POST',body:fd}); data=await r.json(); }
   catch(e){ alert('Upload failed: '+e); $('go').disabled=false; return; }

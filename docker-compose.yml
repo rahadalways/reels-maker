@@ -9,6 +9,7 @@ services:
       - REELS_PORT=5000
       - REELS_LLM_API_KEY=${REELS_LLM_API_KEY}
       - REELS_UI_PASSWORD=${REELS_UI_PASSWORD}
+      - PEXELS_API_KEY=${PEXELS_API_KEY:-}
     volumes:
       - ./output:/app/output        # banano clip host e thakuk
       - models:/models              # Whisper model cache (ekbar download)

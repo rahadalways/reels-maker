@@ -93,6 +93,11 @@ def _apply_form(cfg, form):
         cfg["output"]["zoom"] = 0.0
         cfg["output"]["fade"] = 0.0
     cfg["ai"]["enabled"] = form.get("ai", "true") == "true"
+    cfg["broll"]["enabled"] = form.get("broll", "true") == "true"
+    fx_on = form.get("effects", "true") == "true"
+    cfg["effects"]["emoji"] = fx_on
+    cfg["effects"]["sfx"] = fx_on
+    cfg["effects"]["progress_bar"] = fx_on
     return cfg
 
 
@@ -268,11 +273,23 @@ def rerender(job_id, idx):
                 track=oc.get("track_face", True))
         except Exception:
             pass
+    # original render er fx (broll/emoji/sfx) reuse kori — clip same thake, sudhu caption palta
+    fx = {"broll": [], "emojis": [], "sfx": []}
+    fx_path = work_dir / f"fx_{idx:02d}.json"
+    if fx_path.exists():
+        try:
+            fx = json.loads(fx_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+
     out_clip = work_dir / f"short_{idx:02d}.mp4"
     try:
         render_clip(video, {"start": clip["start"], "end": clip["end"], "index": idx},
                     ass, out_clip, cfg, ffmpeg=cfg.get("ffmpeg", "ffmpeg"),
-                    crop_filter=crop_filter, fade=oc.get("fade", 0.0))
+                    crop_filter=crop_filter, fade=oc.get("fade", 0.0),
+                    broll=fx.get("broll", []), emojis=fx.get("emojis", []),
+                    sfx=fx.get("sfx", []),
+                    progress_bar=cfg.get("effects", {}).get("progress_bar", True))
     except Exception as e:
         return jsonify({"error": f"re-render fail: {e}"}), 500
     return jsonify({"ok": True, "url": f"/api/file/{job_id}/{out_clip.name}"})

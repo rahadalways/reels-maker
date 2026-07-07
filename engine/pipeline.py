@@ -12,9 +12,53 @@ from steps.transcribe import transcribe
 from steps.segment import select_segments
 from steps.analyze_ai import select_segments_ai
 from steps.llm import make_backend
+from steps.broll import emoji_path, fetch_broll, plan_effects
 from steps.caption import words_to_ass
 from steps.cut import render_clip
 from steps.reframe import make_crop_filter
+
+ENGINE_DIR = Path(__file__).resolve().parent
+SFX_WHOOSH = ENGINE_DIR / "assets" / "sfx" / "whoosh.wav"
+SFX_POP = ENGINE_DIR / "assets" / "sfx" / "pop.wav"
+
+
+def build_fx(clip, backend, cfg, work_dir, say):
+    """Clip er jonno B-roll/emoji/sfx plan + download. Return dict (render_clip kwargs)."""
+    bc = cfg.get("broll", {})
+    ec = cfg.get("effects", {})
+    fx = {"broll": [], "emojis": [], "sfx": []}
+    want_broll = bc.get("enabled", True)
+    want_emoji = ec.get("emoji", True)
+    if backend is None or not (want_broll or want_emoji):
+        return fx
+
+    try:
+        plan = plan_effects(clip, backend, max_broll=bc.get("max_per_clip", 3))
+    except Exception as e:
+        say(f"     ⚠️ fx planning fail ({e}) — plain render")
+        return fx
+
+    cdur = bc.get("cutaway_dur", 2.5)
+    if want_broll:
+        for c in plan["cutaways"]:
+            p = fetch_broll(c["keyword"], work_dir / "broll")
+            if p:
+                fx["broll"].append({"path": str(p), "t": c["t"], "dur": cdur})
+                say(f"     🎞️ B-roll: “{c['keyword']}” @{c['t']:.0f}s")
+    if want_emoji:
+        for e in plan["emojis"]:
+            p = emoji_path(e["name"])
+            if p:
+                fx["emojis"].append({"path": str(p), "t": e["t"], "dur": 1.4})
+
+    if ec.get("sfx", True):
+        if SFX_WHOOSH.exists():
+            for b in fx["broll"]:
+                fx["sfx"].append({"path": str(SFX_WHOOSH), "t": b["t"], "vol": 0.8})
+        if SFX_POP.exists():
+            for e in fx["emojis"]:
+                fx["sfx"].append({"path": str(SFX_POP), "t": e["t"], "vol": 0.8})
+    return fx
 
 
 def run_pipeline(video, cfg, work_dir, progress=None):
@@ -54,6 +98,7 @@ def run_pipeline(video, cfg, work_dir, progress=None):
     sc = cfg["segment"]
     ai = cfg.get("ai", {})
     clips = []
+    backend = None
     if ai.get("enabled"):
         say(f"③ AI smart selection (backend={ai.get('backend')})...", 45)
         try:
@@ -117,10 +162,18 @@ def run_pipeline(video, cfg, work_dir, progress=None):
             except Exception as e:
                 say(f"     ⚠️ reframe fail ({e}) — plain center-crop")
 
+        # B-roll / emoji / sfx plan (AI backend thakle)
+        fx = build_fx(clip, backend, cfg, work_dir, say)
+        progress_bar = cfg.get("effects", {}).get("progress_bar", True)
+        # fx persist — caption edit + re-render e same fx reuse hobe
+        (work_dir / f"fx_{idx:02d}.json").write_text(
+            json.dumps(fx, ensure_ascii=False), encoding="utf-8")
+
         out_clip = work_dir / f"short_{idx:02d}.mp4"
         render_clip(video, clip, ass, out_clip, cfg, ffmpeg=ffmpeg,
-                    crop_filter=crop_filter, fade=oc.get("fade", 0.0))
-        # ass = None hole render_clip cwd out_dir use kore — basename na, full subtitles path lagena
+                    crop_filter=crop_filter, fade=oc.get("fade", 0.0),
+                    broll=fx["broll"], emojis=fx["emojis"], sfx=fx["sfx"],
+                    progress_bar=progress_bar)
         clip["file"] = out_clip.name
         made.append(clip)
         say(f"   ✓ {out_clip.name}")

@@ -44,6 +44,17 @@ caption:
   position: null         # bottom | center | top
   margin_v: null         # bottom/top theke distance (px)
 
+broll:
+  enabled: true          # AI relevant jaygay stock footage cutaway boshabe
+  max_per_clip: 3        # proti clip e max koyta cutaway
+  cutaway_dur: 2.5       # proti cutaway koto second
+  api_key_env: PEXELS_API_KEY   # free key: pexels.com/api (na thakle broll skip hoy)
+
+effects:
+  emoji: true            # keyword er sathe emoji pop
+  sfx: true              # cutaway/emoji te whoosh/pop sound
+  progress_bar: true     # video-r niche indigo progress bar
+
 output:
   vertical: true         # 9:16 vertical Shorts banabe
   track_face: true       # true = speaker er mukh follow kore crop; false = center-crop
