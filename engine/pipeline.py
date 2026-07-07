@@ -97,19 +97,17 @@ def run_pipeline(video, cfg, work_dir, progress=None):
             )
 
         crop_filter = None
-        if oc.get("vertical", True) and oc.get("track_face", True):
+        if oc.get("vertical", True):
             try:
-                # segment start gula (clip-relative) — zoom/jump-cut boundary
-                seg_starts = [s["start"] - clip["start"] for s in clip.get("segments", [])]
                 crop_filter = make_crop_filter(
                     video, clip["start"], clip["end"],
                     oc["width"], oc["height"],
                     sample_fps=oc.get("sample_fps", 3),
                     zoom_amt=oc.get("zoom", 0.0),
-                    segment_starts=seg_starts,
+                    track=oc.get("track_face", True),   # off holeo center-crop + zoom cholbe
                 )
             except Exception as e:
-                say(f"     ⚠️ face tracking fail ({e}) — center-crop")
+                say(f"     ⚠️ reframe fail ({e}) — plain center-crop")
 
         out_clip = work_dir / f"short_{idx:02d}.mp4"
         render_clip(video, clip, ass, out_clip, cfg, ffmpeg=ffmpeg,

@@ -4,6 +4,7 @@ Browser e drag-drop video -> settings -> Generate -> live progress -> clip previ
 Run:  python engine/web/app.py   (tarpor browser e http://localhost:5000)
 """
 import os
+import re
 import sys
 import threading
 import uuid
@@ -51,6 +52,7 @@ UPLOAD_DIR = OUT_DIR / "_uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 JOBS = {}  # job_id -> {state, pct, log, clips, error}
+_JOB_ID_RE = re.compile(r"^[0-9a-f]{12}$")  # path-traversal thekay (../../ block)
 
 
 def load_config():
@@ -97,6 +99,12 @@ def _run_job(job_id, video_path, cfg, work_dir):
         job["state"] = "error"
         job["error"] = str(e)
         job["log"].append(f"❌ {e}")
+    finally:
+        # upload kora video ta muchhe di — nahole VPS er disk bhore jay
+        try:
+            Path(video_path).unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 @app.route("/")
@@ -133,6 +141,9 @@ def status(job_id):
 
 @app.route("/api/file/<job_id>/<path:filename>")
 def serve_file(job_id, filename):
+    # job_id strict hex na hole reject — ../ diye onno folder e dhoka bondho
+    if not _JOB_ID_RE.match(job_id):
+        return jsonify({"error": "invalid job id"}), 400
     return send_from_directory(OUT_DIR / job_id, filename)
 
 

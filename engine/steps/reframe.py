@@ -99,10 +99,26 @@ def _sample_centers(video_path, clip_start, clip_end, sample_fps, det_width=480)
     return src_w, src_h, src_fps, centers
 
 
+def _probe_dims(video_path):
+    cap = cv2.VideoCapture(str(video_path))
+    src_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 1280
+    src_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 720
+    src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    cap.release()
+    if not (1 <= src_fps <= 120):
+        src_fps = 30.0
+    return src_w, src_h, src_fps
+
+
 def make_crop_filter(video_path, clip_start, clip_end, width, height,
-                     sample_fps=3, zoom_amt=0.0, segment_starts=None):
-    """9:16 crop+scale filter string — face-centered + smooth zoom."""
-    src_w, src_h, src_fps, centers = _sample_centers(video_path, clip_start, clip_end, sample_fps)
+                     sample_fps=3, zoom_amt=0.0, segment_starts=None, track=True):
+    """9:16 crop+scale filter string — face-centered (track=True) + smooth zoom."""
+    if track:
+        src_w, src_h, src_fps, centers = _sample_centers(
+            video_path, clip_start, clip_end, sample_fps)
+    else:
+        src_w, src_h, src_fps = _probe_dims(video_path)
+        centers = []          # tracking off — center crop, kintu zoom thakbe
     crop_w = _even(min(src_w, src_h * AR))
     center_x = src_w / 2.0
 

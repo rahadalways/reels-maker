@@ -158,8 +158,10 @@
   </div>
 
   <div class="card hidden" id="progcard">
-    <h3>⏳ Processing…</h3>
+    <h3 id="progtitle">⏳ Processing…</h3>
     <div class="barwrap"><div class="bar" id="bar"></div></div>
+    <div id="errbox" class="hidden" style="background:rgba(255,92,122,.12);border:1px solid var(--danger);
+      color:#ffb3c2;border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:13.5px"></div>
     <div id="log"></div>
   </div>
 
@@ -188,6 +190,7 @@ $('go').onclick=async()=>{
   $('go').disabled=true;
   $('progcard').classList.remove('hidden'); $('resultcard').classList.add('hidden');
   $('clips').innerHTML=''; $('log').textContent=''; $('bar').style.width='0%';
+  $('errbox').classList.add('hidden'); $('progtitle').textContent='⏳ Processing…';
   $('progcard').scrollIntoView({behavior:'smooth'});
   const fd=new FormData();
   fd.append('video',chosenFile);
@@ -206,8 +209,12 @@ function pollStatus(id){
     let j; try{ j=await(await fetch('/api/status/'+id)).json(); }catch(e){ return; }
     $('bar').style.width=(j.pct||0)+'%';
     $('log').textContent=(j.log||[]).join('\n'); $('log').scrollTop=$('log').scrollHeight;
-    if(j.state==='done'){ clearInterval(poll); showClips(j.clips); $('go').disabled=false; }
-    else if(j.state==='error'){ clearInterval(poll); $('go').disabled=false; }
+    if(j.state==='done'){ clearInterval(poll); $('progtitle').textContent='✅ Complete';
+      showClips(j.clips); $('go').disabled=false; }
+    else if(j.state==='error'){ clearInterval(poll); $('go').disabled=false;
+      $('progtitle').textContent='❌ Failed';
+      $('errbox').textContent='Somossa hoyeche: '+(j.error||'unknown')+' — abar try koro, ba onno video dao.';
+      $('errbox').classList.remove('hidden'); }
   },1000);
 }
 
