@@ -17,6 +17,6 @@ fi
 
 echo "🚀 http://${HOST}:${PORT}  (Ctrl+C bondho korte)"
 exec .venv/bin/gunicorn \
-  --workers 1 --threads 8 --timeout 3600 \
+  --workers 1 --threads 32 --timeout 3600 \
   --bind "${HOST}:${PORT}" \
   --chdir engine/web app:app

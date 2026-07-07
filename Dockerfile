@@ -24,6 +24,7 @@ ENV REELS_HOST=0.0.0.0 \
 
 EXPOSE 5000
 
-# gunicorn: 1 worker (JOBS in-memory share), threads for concurrency, long timeout for uploads
+# gunicorn: 1 worker (JOBS in-memory share). threads=32 — video streaming/download
+# proti connection ekta thread dhore rakhe, kom hole player gula starve kore.
 CMD ["gunicorn", "--chdir", "engine/web", "app:app", \
-     "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "3600"]
+     "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "32", "--timeout", "3600"]
